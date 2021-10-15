@@ -15,8 +15,7 @@ import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
 import com.example.cqnu_tool.databinding.ActivityMainBinding;
-import com.zhuangfei.timetable.core.SubjectBean;
-import com.zhuangfei.timetable.core.TimetableView;
+
 
 import android.view.Menu;
 import android.view.MenuItem;
@@ -28,8 +27,6 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
-    private TimetableView mTimetableView;
-    List<SubjectBean> subjectBeans = new ArrayList<>();
     private static final String TAG = "aaa";
     public WebView webView;
 
