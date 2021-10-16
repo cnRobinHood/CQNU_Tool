@@ -43,4 +43,5 @@ dependencies {
     implementation 'com.zhuangfei:TimetableView:2.0.6'
     implementation 'com.squareup.okhttp3:okhttp:5.0.0-alpha.2'
     implementation 'com.alibaba:fastjson:1.2.78'
+    implementation 'org.riversun:okhttp3-cookie-helper:1.0.0'
 }

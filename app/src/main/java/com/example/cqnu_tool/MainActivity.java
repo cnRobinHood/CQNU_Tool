@@ -1,5 +1,7 @@
 package com.example.cqnu_tool;
 
+import android.annotation.TargetApi;
+import android.os.Build;
 import android.os.Bundle;
 
 import com.google.android.material.snackbar.Snackbar;
@@ -19,11 +21,25 @@ import com.example.cqnu_tool.databinding.ActivityMainBinding;
 
 import android.view.Menu;
 import android.view.MenuItem;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import okhttp3.FormBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -56,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
                 view.loadUrl(url);
                 return super.shouldOverrideUrlLoading(view, url);
             }
+
         });
         webView.loadUrl("https://csxrz.cqnu.edu.cn/cas/login?service=https%3A%2F%2Fcsxmh.cqnu.edu.cn%2FPersonalApplications%2FviewPage%3Factive_nav_num%3D1");
 

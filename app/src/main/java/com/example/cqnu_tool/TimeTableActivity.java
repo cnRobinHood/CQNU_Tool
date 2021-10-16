@@ -26,24 +26,34 @@ import com.zhuangfei.timetable.listener.OnItemBuildAdapter;
 import com.zhuangfei.timetable.model.Schedule;
 import com.zhuangfei.timetable.view.WeekView;
 
+import org.riversun.okhttp3.OkHttp3CookieHelper;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import okhttp3.Call;
 import okhttp3.Callback;
+import okhttp3.Cookie;
+import okhttp3.CookieJar;
 import okhttp3.FormBody;
 import okhttp3.Headers;
+import okhttp3.HttpUrl;
+import okhttp3.Interceptor;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import okhttp3.internal.http2.Header;
 
 public class TimeTableActivity extends AppCompatActivity {
     private static final String TAG = "bossliu";
     private List<CourseInfo> courseInfos = new ArrayList<>();
-
+    private ConcurrentHashMap<String, List<Cookie>> cookieStore = new ConcurrentHashMap<>();
+    private String final_session;
     TimetableView mTimetableView;
     WeekView mWeekView;
     private Handler mhandler = new Handler(){
@@ -51,8 +61,17 @@ public class TimeTableActivity extends AppCompatActivity {
         public void handleMessage(@NonNull Message msg) {
             super.handleMessage(msg);
             //List<Integer> list= new ArrayList<>();
-            mWeekView.source(courseInfos).showView();
-            mTimetableView.source(courseInfos).showView();
+            switch (msg.what) {
+                case 1:
+                    Log.d(TAG, "handleMessage: "+final_session);
+                    getCourseInfo(final_session);
+                    break;
+                case 2:
+                    mWeekView.source(courseInfos).showView();
+                    mTimetableView.source(courseInfos).showView();
+                    break;
+            }
+
         }
     };
 
@@ -61,10 +80,16 @@ public class TimeTableActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_time_table);
         initTimetableView();
-        String session = getIntent().getStringExtra("session");
+        Log.d(TAG, "onCreate: "+getIntent().getStringExtra("session"));
+        final_session = getNewCookie(getIntent().getStringExtra("session"));
+
+    }
+
+    private void getCourseInfo(String session) {
         RequestBody requestBody = new FormBody.Builder().add("xnm", "2021").add("xqm", "3").build();
+        Log.d(TAG, "getCourseInfo: "+session);
         Request request = new Request.Builder()
-                .url("https://yjsxt.cqnu.edu.cn/yjsxt/kbcx/xskbcx_cxXsKb.html").addHeader("cookie", session).addHeader("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36")
+                .url("https://yjsxt.cqnu.edu.cn/yjsxt/kbcx/xskbcx_cxXsKb.html").addHeader("cookie", "JSESSIONID=281F46E1361FF65AA78EA2E4AA77E3CB; route=b4242e6dd44e76b338743664f27d8bdf").addHeader("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36")
                 .post(requestBody)
                 .build();
         OkHttpClient okHttpClient = new OkHttpClient();
@@ -78,6 +103,7 @@ public class TimeTableActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 String data = response.body().string();
+                Log.d(TAG, "onResponse: "+data);
                 JsonsRootBean jsonsRootBean = JSON.parseObject(data, JsonsRootBean.class);
                 for (Kblist kblist : jsonsRootBean.getKblist()
                 ) {
@@ -89,9 +115,73 @@ public class TimeTableActivity extends AppCompatActivity {
                     courseInfo.setCourseWeek(kblist.getXqj());
                     courseInfos.add(courseInfo);
                 }
-                mhandler.sendEmptyMessage(1);
+                mhandler.sendEmptyMessage(2);
             }
         });
+    }
+    //处理重定向的拦截器
+    public class RedirectInterceptor implements Interceptor {
+
+        @Override
+        public Response intercept(Interceptor.Chain chain) throws IOException {
+            okhttp3.Request request = chain.request();
+            Response response = chain.proceed(request);
+            int code = response.code();
+            Log.d(TAG, "intercept: "+code);
+            if (code == 302) {
+                //获取重定向的地址
+
+                String location = response.headers().get("Location");
+                Log.d(TAG, "intercept: "+location);
+                //重新构建请求
+                Request newRequest = request.newBuilder().url(location).build();
+                response = chain.proceed(newRequest);
+            }
+            return response;
+        }
+    }
+
+
+    private String getNewCookie(String oldCookie) {
+        //OkHttp3CookieHelper cookieHelper = new OkHttp3CookieHelper();
+        //cookieHelper.setCookie("http://csxrz.cqnu.edu.cn/cas/login?service=https%3a%2f%2fyjsxt.cqnu.edu.cn%2fsso%2fzllogin", "cookie", oldCookie);
+        final String[] session = new String[1];
+        Request request = new Request.Builder()
+                .url("http://csxrz.cqnu.edu.cn/cas/login?service=https%3a%2f%2fyjsxt.cqnu.edu.cn%2fsso%2fzllogin").addHeader("cookie", oldCookie).addHeader("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36")
+                .get()
+                .build();
+        final String[] cookie = new String[1];
+        OkHttpClient okHttpClient = new OkHttpClient.Builder().followRedirects(false).followSslRedirects(false).addInterceptor(new RedirectInterceptor())
+                .build();
+
+        okHttpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Log.d(TAG, "onFailure: " + e.getMessage());
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                //response.
+                Log.d(TAG, "onResponse: size"+response.headers("Set-Cookie").size());
+                for (String s:response.headers("Set-Cookie")
+                     ) {
+                    Log.d(TAG, "onResponse: "+s);
+                }
+
+                if (response.headers("Set-Cookie").size() == 2) {
+                    final_session = response.headers("Set-Cookie").get(0)+" ;"+response.headers("Set-Cookie").get(1);
+                    final_session = final_session.replace(" ","");
+                    final_session = final_session.replace(";Path=/sso;HttpOnly","");
+                    final_session = final_session.replace(";Path=/","");
+                    Log.d(TAG, "onResponse: "+final_session);
+                    mhandler.sendEmptyMessage(1);
+
+                    Log.d(TAG, "onResponse: "+final_session);
+                }
+            }
+        });
+        return session[0];
     }
 
     private void initTimetableView() {
