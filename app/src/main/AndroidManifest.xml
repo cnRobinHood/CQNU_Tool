@@ -3,6 +3,7 @@
     package="com.example.cqnu_tool">
 
     <application
+        android:name=".MyApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -10,6 +11,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CQNU_Tool"
         android:usesCleartextTraffic="true">
+
         <activity
             android:name=".TimeTableActivity"
             android:exported="true" />
@@ -24,6 +26,23 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <receiver
+            android:name=".widget.RankingListAppWidgetProvider"
+            android:label="课程透明显示(小)">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/rankinglist_appwidget_info" />
+        </receiver>
+
+        <service
+            android:name=".services.RankingListWidgetService"
+            android:permission="android.permission.BIND_REMOTEVIEWS" />
+        <service android:name=".services.NotifiDataSetChangeService" />
     </application>
 
     <uses-permission android:name="android.permission.INTERNET" />

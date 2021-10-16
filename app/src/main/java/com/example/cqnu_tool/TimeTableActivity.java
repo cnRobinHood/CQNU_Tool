@@ -26,7 +26,8 @@ import com.zhuangfei.timetable.listener.OnItemBuildAdapter;
 import com.zhuangfei.timetable.model.Schedule;
 import com.zhuangfei.timetable.view.WeekView;
 
-import org.riversun.okhttp3.OkHttp3CookieHelper;
+
+import org.litepal.LitePal;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -115,6 +116,9 @@ public class TimeTableActivity extends AppCompatActivity {
                     courseInfo.setCourseWeek(kblist.getXqj());
                     courseInfos.add(courseInfo);
                 }
+                LitePal.deleteAll(CourseInfo.class);
+                LitePal.markAsDeleted(courseInfos);
+                LitePal.saveAll(courseInfos);
                 mhandler.sendEmptyMessage(2);
             }
         });

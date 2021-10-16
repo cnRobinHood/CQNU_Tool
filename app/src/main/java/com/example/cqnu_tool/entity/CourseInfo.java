@@ -3,10 +3,12 @@ package com.example.cqnu_tool.entity;
 import com.zhuangfei.timetable.model.Schedule;
 import com.zhuangfei.timetable.model.ScheduleEnable;
 
+import org.litepal.crud.LitePalSupport;
+
 import java.util.ArrayList;
 import java.util.List;
 
-public class CourseInfo implements ScheduleEnable {
+public class CourseInfo extends LitePalSupport implements ScheduleEnable {
     String courseName;
     String courseLength;
     String courseAddress;
